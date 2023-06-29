@@ -1,5 +1,4 @@
-import {PermissionsAndroid, Alert} from 'react-native';
-import RNFS from 'react-native-fs';
+import {PermissionsAndroid} from 'react-native';
 import {IApi, IFile} from './types';
 
 export const getPermissionAndroid = async () => {
@@ -30,26 +29,6 @@ export const getPermissionAndroid = async () => {
       {cancelable: false},
     );
   }
-};
-
-export const downloadFile = (url: string, path: string) => {
-  return RNFS.downloadFile({
-    fromUrl: url,
-    toFile: path,
-  })
-    .promise.then(async res => {
-      if (res && res.statusCode === 200 && res.bytesWritten > 0) {
-        await RNFS.getFSInfo().then(response => {
-          const deviceSpace = response.freeSpace * 0.001;
-          if (deviceSpace < res.bytesWritten) {
-            Alert.alert('Not enough space');
-          }
-        });
-      } else {
-        console.log(res);
-      }
-    })
-    .catch(error => console.log(error));
 };
 
 export function csvToObj(csv: string) {
@@ -116,3 +95,4 @@ export const isFileData = (data: any): data is IFile[] => {
     })
   );
 };
+

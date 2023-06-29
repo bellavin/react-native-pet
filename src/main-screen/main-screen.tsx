@@ -1,30 +1,20 @@
 import React, {useState} from 'react';
-import {
-  View,
-  StyleSheet,
-  ActivityIndicator,
-  Platform,
-  Text,
-} from 'react-native';
-import RNFS from 'react-native-fs';
-import Buttons from './buttons';
-import {Colors, FILES_URL, LoadingState, Routes} from '../constants';
-import {
-  downloadFile,
-  getPermissionAndroid,
-  csvToObj,
-  isApiData,
-  isFileData,
-} from '../utils';
-import Content from './content';
+import {View, StyleSheet, ActivityIndicator, Text} from 'react-native';
+import Buttons from './main-screen-buttons';
+import {Colors, LoadingState, Routes} from '../constants';
+import {isApiData} from '../utils';
+import Content from './main-screen-content';
 import {IApi, IFile} from '../types';
+import {useStore} from '../store/store';
+import File from './main-screen-file';
 
 function MainScreen(): JSX.Element {
   const [data, setData] = useState<IApi[] | IFile[] | []>([]);
-  const [lodaingState, setLodaingState] = useState(LoadingState.Idle);
+  const [loadingState, setLoadingState] = useState(LoadingState.Idle);
+  const store = useStore();
 
   const handleApiButtonClick = () => {
-    setLodaingState(LoadingState.Loading);
+    setLoadingState(LoadingState.Loading);
 
     Promise.all(
       [Routes.api1, Routes.api2].map(url =>
@@ -34,51 +24,25 @@ function MainScreen(): JSX.Element {
       .then(data => {
         const normalizeData = data.flat();
         if (isApiData(normalizeData)) {
-          setLodaingState(LoadingState.Resolve);
+          setLoadingState(LoadingState.Resolve);
           setData(normalizeData);
         } else {
           throw new Error();
         }
       })
       .catch(error => {
-        setLodaingState(LoadingState.Reject);
+        setLoadingState(LoadingState.Reject);
         console.log(error);
       });
   };
 
   const handleFileButtonClick = async () => {
-    if (Platform.OS === 'android') {
-      const granted = await getPermissionAndroid();
-      if (!granted) return;
-    }
-
-    const url = FILES_URL;
-    const path = `${RNFS.DocumentDirectoryPath}/reactNativePet.csv`;
-    setLodaingState(LoadingState.Loading);
-
-    await downloadFile(url, path).catch(_err =>
-      setLodaingState(LoadingState.Reject),
-    );
-
-    await RNFS.readFile(path, 'ascii')
-      .then(data => {
-        const normalizeData = csvToObj(data).slice(0, 100);
-        if (isFileData(normalizeData)) {
-          setLodaingState(LoadingState.Resolve);
-          setData(normalizeData);
-        } else {
-          throw new Error();
-        }
-      })
-      .catch(error => {
-        setLodaingState(LoadingState.Reject);
-        console.log(error);
-      });
+    store.fileStore.getDataFromApi();
   };
 
-  const isLoading = lodaingState === LoadingState.Loading;
-  const hasData = lodaingState === LoadingState.Resolve && data.length > 0;
-  const isError = lodaingState === LoadingState.Reject;
+  const isLoading = loadingState === LoadingState.Loading;
+  const isResolve = loadingState === LoadingState.Resolve;
+  const isReject = loadingState === LoadingState.Reject;
 
   return (
     <View style={styles.wrapper}>
@@ -90,8 +54,10 @@ function MainScreen(): JSX.Element {
             style={styles.loader}
           />
         )}
-        {hasData && <Content data={data} />}
-        {isError && (
+
+        {isResolve && <Content data={data} />}
+        <File />
+        {isReject && (
           <Text style={styles.errorMessage}>Что-то пошло не так :(</Text>
         )}
       </View>

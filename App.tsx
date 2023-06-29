@@ -1,12 +1,17 @@
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
 import MainScreen from './src/main-screen/main-screen';
+import RootStore, {StoreProvider} from './src/store/store';
+
+const store = new RootStore();
 
 function App(): JSX.Element {
   return (
-    <View style={styles.wrapper}>
-      <MainScreen />
-    </View>
+    <StoreProvider store={store}>
+      <View style={styles.wrapper}>
+        <MainScreen />
+      </View>
+    </StoreProvider>
   );
 }
 
